@@ -17,24 +17,26 @@ namespace pd3
         List<string> pozymiai = new List<string>();
         List<int> pazymetiIndex = new List<int>();
         string[] fileArray = new string[10000];
-
+       Thread th1;
+        Thread th;
+        Thread th2;
 
 
         public Form1()
         {
             InitializeComponent();
+ Thread th1 = new Thread(() => { pazymek(); });
 
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
             //gija surast kataloga ir parodyti galimus pozymius:
-            Thread th = new Thread(() => { ieskok(); });
+            th = new Thread(() => { ieskok(); });
             th.Start();
         }
         private void ieskok()
         {
-
 
             _ = this.Invoke((Action)delegate
             {
@@ -106,7 +108,7 @@ namespace pd3
 
         private void button2_Click(object sender, EventArgs e)
         {
-            Thread th1 = new Thread(() => { pazymek(); });
+            th1 = new Thread(() => { pazymek(); });
             th1.Start();
         }
 
@@ -123,7 +125,7 @@ namespace pd3
                     listBox1.Items.Add(Item);
 
                 }
-            });
+
 
 
             //indexai pazymetu "pozymiai liste"
@@ -142,11 +144,19 @@ namespace pd3
 
             }
 
+            //for progress bar:
+            progressBar.Minimum = 0;
+            progressBar.Maximum = pazymetiIndex.Count();
+    
+        });
+
+
+
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-            Thread th2 = new Thread(() => { irasyti(); });
+            th2 = new Thread(() => { irasyti(); });
             th2.Start();
         }
 
@@ -164,7 +174,6 @@ namespace pd3
 
 
             }
-
   
             List<List<string>> outlist = new List<List<string>>();
 
@@ -177,8 +186,8 @@ namespace pd3
                 outlist.Add(new List<string>(values));
 
             }
-   
-
+                //progress bar pildymui:
+            int k = 0;
             StreamWriter sw = new StreamWriter("C:\\Users\\inga3\\OneDrive\\Stalinis kompiuteris\\inga\\test.arff");
             //pirma eilute
             sw.WriteLine("@relation SMILEfeatures");
@@ -194,22 +203,44 @@ namespace pd3
             sw.WriteLine(" ");
             sw.WriteLine("@data");
             sw.WriteLine(" ");
-            for (int i = 0; i < outlist.Count; i++)
+      
+            _ = this.Invoke((Action)delegate
+            {
+
+                for (int i = 0; i < outlist.Count; i++)
             {
                 foreach (int paz in pazymetiIndex)
                 {
   
                     //rezultatu eilute i faila
                     sw.Write(outlist[i][paz] + ",");
-
-
+                        while (k <= progressBar.Maximum)
+                        {
+                                  Thread.Sleep(2000);
+                            progressBar.Value = k;
+                            k++;
+                        }
                 }
 
             }
-            sw.Close();
+            });
 
+            sw.Close();
         }
 
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            //if threads are executing= dont close the form
+            if (th.IsAlive ==false || th1.IsAlive == false || th2.IsAlive == false) 
+            {
+                  Application.Exit();
+            }
+
+            else
+            {
+             e.Cancel = true; 
+            }
+        }
     }
     
 }
